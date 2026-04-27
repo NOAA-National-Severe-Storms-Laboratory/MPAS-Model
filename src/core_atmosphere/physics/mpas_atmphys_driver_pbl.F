@@ -17,6 +17,7 @@
 
  use bl_mynn,only: bl_mynn_init
  use module_bl_mynn,only: mynn_bl_driver
+ use module_bl_mynnedmf_driver,only: mynnedmf_driver
  use module_bl_shinhong,only: shinhong
  use module_bl_ysu
  use bl_shinhong,only: bl_shinhong_init
@@ -128,6 +129,15 @@
  if(.not.allocated(kzm_p)) allocate(kzm_p(ims:ime,kms:kme,jms:jme))
  if(.not.allocated(kzq_p)) allocate(kzq_p(ims:ime,kms:kme,jms:jme))
 
+ !allocation of chemistry arrays passed to MYNN-EDMF (filled only when do_chemistry).
+ if (do_chemistry) then
+    if(.not.allocated(ddvel_p)) allocate(ddvel_p(ims:ime,jms:jme,1:num_chem))
+    if(.not.allocated(tend_chem_settle_p)) allocate(tend_chem_settle_p(ims:ime,kms:kme,jms:jme,1:num_chem))
+    if(.not.allocated(chem_p)) allocate(chem_p(ims:ime,kms:kme,jms:jme,1:num_chem))
+    if(.not.allocated(frp_out_p)) allocate(frp_out_p(ims:ime,jms:jme))
+    if(.not.allocated(aero_emis_for_enhmix_p)) allocate(aero_emis_for_enhmix_p(ims:ime,jms:jme))
+ endif
+
  pbl_select: select case (trim(pbl_scheme))
 
     case("bl_shinhong")
@@ -206,6 +216,54 @@
        !allocation of additional arrays:
        if(.not.allocated(pattern_spp_pbl)) allocate(pattern_spp_pbl(ims:ime,kms:kme,jms:jme))
 
+    case("bl_mynnedmf")
+       if(.not.allocated(dx_p)        ) allocate(dx_p(ims:ime,jms:jme)                )
+       if(.not.allocated(ch_p)        ) allocate(ch_p(ims:ime,jms:jme)                )
+       if(.not.allocated(qsfc_p)      ) allocate(qsfc_p(ims:ime,jms:jme)              )
+       if(.not.allocated(tsk_p)       ) allocate(tsk_p(ims:ime,jms:jme)               )
+       if(.not.allocated(maxwidthbl_p)) allocate(maxwidthbl_p(ims:ime,jms:jme)        )
+       if(.not.allocated(maxmfbl_p)   ) allocate(maxmfbl_p(ims:ime,jms:jme)           )
+       if(.not.allocated(zbl_plume_p) ) allocate(zbl_plume_p(ims:ime,jms:jme)         )
+       if(.not.allocated(excessh_p)   ) allocate(excessh_p(ims:ime,jms:jme)           )
+       if(.not.allocated(excessq_p)   ) allocate(excessq_p(ims:ime,jms:jme)           )
+
+       if(.not.allocated(cov_p)       ) allocate(cov_p(ims:ime,kms:kme,jms:jme)       )
+       if(.not.allocated(qke_p)       ) allocate(qke_p(ims:ime,kms:kme,jms:jme)       )
+       if(.not.allocated(qsq_p)       ) allocate(qsq_p(ims:ime,kms:kme,jms:jme)       )
+       if(.not.allocated(tsq_p)       ) allocate(tsq_p(ims:ime,kms:kme,jms:jme)       )
+       if(.not.allocated(qkeadv_p)    ) allocate(qkeadv_p(ims:ime,kms:kme,jms:jme)    )
+       if(.not.allocated(elpbl_p)     ) allocate(elpbl_p(ims:ime,kms:kme,jms:jme)     )
+       if(.not.allocated(sh3d_p)      ) allocate(sh3d_p(ims:ime,kms:kme,jms:jme)      )
+       if(.not.allocated(sm3d_p)      ) allocate(sm3d_p(ims:ime,kms:kme,jms:jme)      )
+       if(.not.allocated(dqke_p)      ) allocate(dqke_p(ims:ime,kms:kme,jms:jme)      )
+       if(.not.allocated(qbuoy_p)     ) allocate(qbuoy_p(ims:ime,kms:kme,jms:jme)     )
+       if(.not.allocated(qdiss_p)     ) allocate(qdiss_p(ims:ime,kms:kme,jms:jme)     )
+       if(.not.allocated(qshear_p)    ) allocate(qshear_p(ims:ime,kms:kme,jms:jme)    )
+       if(.not.allocated(qwt_p)       ) allocate(qwt_p(ims:ime,kms:kme,jms:jme)       )
+       if(.not.allocated(qcbl_p)      ) allocate(qcbl_p(ims:ime,kms:kme,jms:jme)      )
+       if(.not.allocated(qibl_p)      ) allocate(qibl_p(ims:ime,kms:kme,jms:jme)      )
+       if(.not.allocated(cldfrabl_p)  ) allocate(cldfrabl_p(ims:ime,kms:kme,jms:jme)  )
+       if(.not.allocated(edmfa_p)     ) allocate(edmfa_p(ims:ime,kms:kme,jms:jme)     )
+       if(.not.allocated(edmfw_p)     ) allocate(edmfw_p(ims:ime,kms:kme,jms:jme)     )
+       if(.not.allocated(edmfqt_p)    ) allocate(edmfqt_p(ims:ime,kms:kme,jms:jme)    )
+       if(.not.allocated(edmfthl_p)   ) allocate(edmfthl_p(ims:ime,kms:kme,jms:jme)   )
+       if(.not.allocated(edmfent_p)   ) allocate(edmfent_p(ims:ime,kms:kme,jms:jme)   )
+       if(.not.allocated(edmfqc_p)    ) allocate(edmfqc_p(ims:ime,kms:kme,jms:jme)    )
+       if(.not.allocated(subthl_p)    ) allocate(subthl_p(ims:ime,kms:kme,jms:jme)    )
+       if(.not.allocated(subqv_p)     ) allocate(subqv_p(ims:ime,kms:kme,jms:jme)     )
+       if(.not.allocated(detthl_p)    ) allocate(detthl_p(ims:ime,kms:kme,jms:jme)    )
+       if(.not.allocated(detqv_p)     ) allocate(detqv_p(ims:ime,kms:kme,jms:jme)     )
+
+       !additional tendencies:
+       if(.not.allocated(rqsblten_p)  ) allocate(rqsblten_p(ims:ime,kms:kme,jms:jme)  )
+       if(.not.allocated(rncblten_p)  ) allocate(rncblten_p(ims:ime,kms:kme,jms:jme)  )
+       if(.not.allocated(rniblten_p)  ) allocate(rniblten_p(ims:ime,kms:kme,jms:jme)  )
+       if(.not.allocated(rnifablten_p)) allocate(rnifablten_p(ims:ime,kms:kme,jms:jme))
+       if(.not.allocated(rnwfablten_p)) allocate(rnwfablten_p(ims:ime,kms:kme,jms:jme))
+
+       !allocation of additional arrays:
+       if(.not.allocated(pattern_spp_pbl)) allocate(pattern_spp_pbl(ims:ime,kms:kme,jms:jme))
+
     case default
 
  end select pbl_select
@@ -252,6 +310,14 @@
  if(allocated(kzh_p)) deallocate(kzh_p)
  if(allocated(kzm_p)) deallocate(kzm_p)
  if(allocated(kzq_p)) deallocate(kzq_p)
+
+ if (do_chemistry) then
+    if(allocated(ddvel_p)            ) deallocate(ddvel_p            )
+    if(allocated(chem_p)             ) deallocate(chem_p             )
+    if(allocated(tend_chem_settle_p) ) deallocate(tend_chem_settle_p )
+    if(allocated(frp_out_p)          ) deallocate(frp_out_p          )
+    if(allocated(aero_emis_for_enhmix_p)) deallocate(aero_emis_for_enhmix_p)
+ endif
 
  pbl_select: select case (trim(pbl_scheme))
 
@@ -301,6 +367,54 @@
        if(allocated(qkeadv_p)    ) deallocate(qkeadv_p    )
        if(allocated(elpbl_p)     ) deallocate(elpbl_p     )
        if(allocated(tkepbl_p)    ) deallocate(tkepbl_p    )
+       if(allocated(sh3d_p)      ) deallocate(sh3d_p      )
+       if(allocated(sm3d_p)      ) deallocate(sm3d_p      )
+       if(allocated(dqke_p)      ) deallocate(dqke_p      )
+       if(allocated(qbuoy_p)     ) deallocate(qbuoy_p     )
+       if(allocated(qdiss_p)     ) deallocate(qdiss_p     )
+       if(allocated(qshear_p)    ) deallocate(qshear_p    )
+       if(allocated(qwt_p)       ) deallocate(qwt_p       )
+       if(allocated(qcbl_p)      ) deallocate(qcbl_p      )
+       if(allocated(qibl_p)      ) deallocate(qibl_p      )
+       if(allocated(cldfrabl_p)  ) deallocate(cldfrabl_p  )
+       if(allocated(edmfa_p)     ) deallocate(edmfa_p     )
+       if(allocated(edmfw_p)     ) deallocate(edmfw_p     )
+       if(allocated(edmfqt_p)    ) deallocate(edmfqt_p    )
+       if(allocated(edmfthl_p)   ) deallocate(edmfthl_p   )
+       if(allocated(edmfent_p)   ) deallocate(edmfent_p   )
+       if(allocated(edmfqc_p)    ) deallocate(edmfqc_p    )
+       if(allocated(subthl_p)    ) deallocate(subthl_p    )
+       if(allocated(subqv_p)     ) deallocate(subqv_p     )
+       if(allocated(detthl_p)    ) deallocate(detthl_p    )
+       if(allocated(detqv_p)     ) deallocate(detqv_p     )
+
+       !additional tendencies:
+       if(allocated(rqsblten_p)  ) deallocate(rqsblten_p  )
+       if(allocated(rncblten_p)  ) deallocate(rncblten_p  )
+       if(allocated(rniblten_p)  ) deallocate(rniblten_p  )
+       if(allocated(rnifablten_p)) deallocate(rnifablten_p)
+       if(allocated(rnwfablten_p)) deallocate(rnwfablten_p)
+
+       !deallocation of additional arrays:
+       if(allocated(pattern_spp_pbl)) deallocate(pattern_spp_pbl)
+
+    case("bl_mynnedmf")
+       if(allocated(dx_p)        ) deallocate(dx_p        )
+       if(allocated(ch_p)        ) deallocate(ch_p        )
+       if(allocated(qsfc_p)      ) deallocate(qsfc_p      )
+       if(allocated(tsk_p)       ) deallocate(tsk_p       )
+       if(allocated(maxwidthbl_p)) deallocate(maxwidthbl_p)
+       if(allocated(maxmfbl_p)   ) deallocate(maxmfbl_p   )
+       if(allocated(zbl_plume_p) ) deallocate(zbl_plume_p )
+       if(allocated(excessh_p)   ) deallocate(excessh_p   )
+       if(allocated(excessq_p)   ) deallocate(excessq_p   )
+
+       if(allocated(cov_p)       ) deallocate(cov_p       )
+       if(allocated(qke_p)       ) deallocate(qke_p       )
+       if(allocated(qsq_p)       ) deallocate(qsq_p       )
+       if(allocated(tsq_p)       ) deallocate(tsq_p       )
+       if(allocated(qkeadv_p)    ) deallocate(qkeadv_p    )
+       if(allocated(elpbl_p)     ) deallocate(elpbl_p     )
        if(allocated(sh3d_p)      ) deallocate(sh3d_p      )
        if(allocated(sm3d_p)      ) deallocate(sm3d_p      )
        if(allocated(dqke_p)      ) deallocate(dqke_p      )
@@ -584,6 +698,92 @@
        enddo
        enddo
 
+    case("bl_mynnedmf")
+       call mpas_pool_get_config(configs,'config_len_disp',len_disp)
+       call mpas_pool_get_array(mesh,'meshDensity',meshDensity)
+
+       call mpas_pool_get_array(sfc_input,'skintemp',skintemp)
+       call mpas_pool_get_array(diag_physics,'ch'        ,ch        )
+       call mpas_pool_get_array(diag_physics,'qsfc'      ,qsfc      )
+       call mpas_pool_get_array(diag_physics,'el_pbl'    ,el_pbl    )
+       call mpas_pool_get_array(diag_physics,'cov'       ,cov       )
+       call mpas_pool_get_array(diag_physics,'qke'       ,qke       )
+       call mpas_pool_get_array(diag_physics,'qke_adv'   ,qke_adv   )
+       call mpas_pool_get_array(diag_physics,'qsq'       ,qsq       )
+       call mpas_pool_get_array(diag_physics,'tsq'       ,tsq       )
+       call mpas_pool_get_array(diag_physics,'sh3d'      ,sh3d      )
+       call mpas_pool_get_array(diag_physics,'sm3d'      ,sm3d      )
+       call mpas_pool_get_array(diag_physics,'cldfrac_bl',cldfrac_bl)
+       call mpas_pool_get_array(diag_physics,'qc_bl'     ,qc_bl     )
+       call mpas_pool_get_array(diag_physics,'qi_bl'     ,qi_bl     )
+       call mpas_pool_get_array(diag_physics,'edmf_a'    ,edmf_a    )
+       call mpas_pool_get_array(diag_physics,'edmf_ent'  ,edmf_ent  )
+       call mpas_pool_get_array(diag_physics,'edmf_qc'   ,edmf_qc   )
+       call mpas_pool_get_array(diag_physics,'edmf_qt'   ,edmf_qt   )
+       call mpas_pool_get_array(diag_physics,'edmf_thl'  ,edmf_thl  )
+       call mpas_pool_get_array(diag_physics,'edmf_w'    ,edmf_w    )
+       call mpas_pool_get_array(diag_physics,'sub_thl'   ,sub_thl   )
+       call mpas_pool_get_array(diag_physics,'sub_qv'    ,sub_qv    )
+       call mpas_pool_get_array(diag_physics,'det_thl'   ,det_thl   )
+       call mpas_pool_get_array(diag_physics,'det_qv'    ,det_qv    )
+
+       do j = jts,jte
+       do i = its,ite
+          dx_p(i,j)   = len_disp / meshDensity(i)**0.25
+          ch_p(i,j)   = ch(i)
+          qsfc_p(i,j) = qsfc(i)
+          tsk_p(i,j)  = skintemp(i)
+       enddo
+       enddo
+
+       do j = jts,jte
+       do k = kts,kte
+       do i = its,ite
+          elpbl_p(i,k,j)    = el_pbl(k,i)
+          cov_p(i,k,j)      = cov(k,i)
+          qke_p(i,k,j)      = qke(k,i)
+          qsq_p(i,k,j)      = qsq(k,i)
+          tsq_p(i,k,j)      = tsq(k,i)
+          qkeadv_p(i,k,j)   = qke_adv(k,i)
+          sh3d_p(i,k,j)     = sh3d(k,i)
+          sm3d_p(i,k,j)     = sm3d(k,i)
+          cldfrabl_p(i,k,j) = cldfrac_bl(k,i)
+          qcbl_p(i,k,j)     = qc_bl(k,i)
+          qibl_p(i,k,j)     = qi_bl(k,i)
+          edmfa_p(i,k,j)    = edmf_a(k,i)
+          edmfent_p(i,k,j)  = edmf_ent(k,i)
+          edmfqc_p(i,k,j)   = edmf_qc(k,i)
+          edmfqt_p(i,k,j)   = edmf_qt(k,i)
+          edmfthl_p(i,k,j)  = edmf_thl(k,i)
+          edmfw_p(i,k,j)    = edmf_w(k,i)
+          subthl_p(i,k,j)   = sub_thl(k,i)
+          subqv_p(i,k,j)    = sub_qv(k,i)
+          detthl_p(i,k,j)   = det_thl(k,i)
+          detqv_p(i,k,j)    = det_qv(k,i)
+          dqke_p(i,k,j)     = 0._RKIND
+          qbuoy_p(i,k,j)    = 0._RKIND
+          qdiss_p(i,k,j)    = 0._RKIND
+          qshear_p(i,k,j)   = 0._RKIND
+          qwt_p(i,k,j)      = 0._RKIND
+
+          rqsblten_p(i,k,j)   = 0._RKIND
+          rncblten_p(i,k,j)   = 0._RKIND
+          rniblten_p(i,k,j)   = 0._RKIND
+          rnifablten_p(i,k,j) = 0._RKIND
+          rnwfablten_p(i,k,j) = 0._RKIND
+
+          pattern_spp_pbl(i,k,j) = 0._RKIND
+       enddo
+       enddo
+       do i = its,ite
+          maxwidthbl_p(i,j) = 0._RKIND
+          maxmfbl_p(i,j)    = 0._RKIND
+          zbl_plume_p(i,j)  = 0._RKIND
+          excessh_p(i,j)    = 0._RKIND
+          excessq_p(i,j)    = 0._RKIND
+       enddo
+       enddo
+
     case default
 
  end select pbl_select
@@ -638,6 +838,7 @@
 
 !local pointers for MYNN scheme:
  real(kind=RKIND),dimension(:),pointer  :: delta,wstar
+ real(kind=RKIND),dimension(:),pointer  :: maxmf,maxwidth,ztop_plume,excess_h,excess_q
  real(kind=RKIND),dimension(:,:),pointer:: cov,qke,qsq,tsq,sh3d,sm3d,tke_pbl,qke_adv,el_pbl,dqke,qbuoy, &
                                            qdiss,qshear,qwt
  real(kind=RKIND),dimension(:,:),pointer:: cldfrac_bl,qc_bl,qi_bl
@@ -815,6 +1016,119 @@
           enddo
        endif
 
+    case("bl_mynnedmf")
+       call mpas_pool_get_array(diag_physics,'maxmf'     ,maxmf     )
+       call mpas_pool_get_array(diag_physics,'maxwidth'  ,maxwidth  )
+       call mpas_pool_get_array(diag_physics,'ztop_plume',ztop_plume)
+       call mpas_pool_get_array(diag_physics,'excess_h'  ,excess_h  )
+       call mpas_pool_get_array(diag_physics,'excess_q'  ,excess_q  )
+       call mpas_pool_get_array(diag_physics,'el_pbl'    ,el_pbl    )
+       call mpas_pool_get_array(diag_physics,'cov'       ,cov       )
+       call mpas_pool_get_array(diag_physics,'qke'       ,qke       )
+       call mpas_pool_get_array(diag_physics,'qke_adv'   ,qke_adv   )
+       call mpas_pool_get_array(diag_physics,'qsq'       ,qsq       )
+       call mpas_pool_get_array(diag_physics,'tsq'       ,tsq       )
+       call mpas_pool_get_array(diag_physics,'sh3d'      ,sh3d      )
+       call mpas_pool_get_array(diag_physics,'sm3d'      ,sm3d      )
+       call mpas_pool_get_array(diag_physics,'dqke'      ,dqke      )
+       call mpas_pool_get_array(diag_physics,'qbuoy'     ,qbuoy     )
+       call mpas_pool_get_array(diag_physics,'qdiss'     ,qdiss     )
+       call mpas_pool_get_array(diag_physics,'qshear'    ,qshear    )
+       call mpas_pool_get_array(diag_physics,'qwt'       ,qwt       )
+       call mpas_pool_get_array(diag_physics,'cldfrac_bl',cldfrac_bl)
+       call mpas_pool_get_array(diag_physics,'qc_bl'     ,qc_bl     )
+       call mpas_pool_get_array(diag_physics,'qi_bl'     ,qi_bl     )
+       call mpas_pool_get_array(diag_physics,'edmf_a'    ,edmf_a    )
+       call mpas_pool_get_array(diag_physics,'edmf_ent'  ,edmf_ent  )
+       call mpas_pool_get_array(diag_physics,'edmf_qc'   ,edmf_qc   )
+       call mpas_pool_get_array(diag_physics,'edmf_qt'   ,edmf_qt   )
+       call mpas_pool_get_array(diag_physics,'edmf_thl'  ,edmf_thl  )
+       call mpas_pool_get_array(diag_physics,'edmf_w'    ,edmf_w    )
+       call mpas_pool_get_array(diag_physics,'sub_thl'   ,sub_thl   )
+       call mpas_pool_get_array(diag_physics,'sub_qv'    ,sub_qv    )
+       call mpas_pool_get_array(diag_physics,'det_thl'   ,det_thl   )
+       call mpas_pool_get_array(diag_physics,'det_qv'    ,det_qv    )
+
+       call mpas_pool_get_array(tend_physics,'rqsblten'  ,rqsblten  )
+
+       do j = jts,jte
+       do i = its,ite
+          maxmf(i)      = maxmfbl_p(i,j)
+          maxwidth(i)   = maxwidthbl_p(i,j)
+          ztop_plume(i) = zbl_plume_p(i,j)
+          excess_h(i)   = excessh_p(i,j)
+          excess_q(i)   = excessq_p(i,j)
+       enddo
+       enddo
+
+       do j = jts,jte
+       do k = kts,kte
+       do i = its,ite
+          el_pbl(k,i)     = elpbl_p(i,k,j)
+          cov(k,i)        = cov_p(i,k,j)
+          qke(k,i)        = qke_p(i,k,j)
+          qsq(k,i)        = qsq_p(i,k,j)
+          tsq(k,i)        = tsq_p(i,k,j)
+          sh3d(k,i)       = sh3d_p(i,k,j)
+          sm3d(k,i)       = sm3d_p(i,k,j)
+          qke_adv(k,i)    = qkeadv_p(i,k,j)
+          cldfrac_bl(k,i) = cldfrabl_p(i,k,j)
+          qc_bl(k,i)      = qcbl_p(i,k,j)
+          qi_bl(k,i)      = qibl_p(i,k,j)
+          edmf_a(k,i)     = edmfa_p(i,k,j)
+          edmf_ent(k,i)   = edmfent_p(i,k,j)
+          edmf_qc(k,i)    = edmfqc_p(i,k,j)
+          edmf_qt(k,i)    = edmfqt_p(i,k,j)
+          edmf_thl(k,i)   = edmfthl_p(i,k,j)
+          edmf_w(k,i)     = edmfw_p(i,k,j)
+          sub_thl(k,i)    = subthl_p(i,k,j)
+          sub_qv(k,i)     = subqv_p(i,k,j)
+          det_thl(k,i)    = detthl_p(i,k,j)
+          det_qv(k,i)     = detqv_p(i,k,j)
+          dqke(k,i)       = dqke_p(i,k,j)
+          qbuoy(k,i)      = qbuoy_p(i,k,j)
+          qdiss(k,i)      = qdiss_p(i,k,j)
+          qshear(k,i)     = qshear_p(i,k,j)
+          qwt(k,i)        = qwt_p(i,k,j)
+
+          rqsblten(k,i)   = rqsblten_p(i,k,j)
+       enddo
+       enddo
+       enddo
+
+       if(f_ni) then
+          call mpas_pool_get_array(tend_physics,'rniblten',rniblten)
+          do j = jts,jte
+             do k = kts,kte
+                do i = its,ite
+                   rniblten(k,i) = rniblten_p(i,k,j)
+                enddo
+             enddo
+          enddo
+       endif
+       if(f_nc) then
+          call mpas_pool_get_array(tend_physics,'rncblten',rncblten)
+          do j = jts,jte
+             do k = kts,kte
+                do i = its,ite
+                   rncblten(k,i) = rncblten_p(i,k,j)
+                enddo
+             enddo
+          enddo
+       endif
+       if(f_nifa .and. f_nwfa) then
+          call mpas_pool_get_array(tend_physics,'rnifablten',rnifablten)
+          call mpas_pool_get_array(tend_physics,'rnwfablten',rnwfablten)
+          do j = jts,jte
+             do k = kts,kte
+                do i = its,ite
+                   rnifablten(k,i) = rnifablten_p(i,k,j)
+                   rnwfablten(k,i) = rnwfablten_p(i,k,j)
+                enddo
+             enddo
+          enddo
+       endif
+
     case default
 
  end select pbl_select
@@ -848,6 +1162,10 @@
                          xlf,xls,xlv,errmsg,errflg)
 !      call mpas_log_write('--- end subroutine bl_mynn_init:')
 
+    case("bl_mynnedmf")
+       call bl_mynn_init(cp,cpv,cice,cliq,ep_1,ep_2,gravity,karman,P0,R_d,R_v,svp1,svp2,svp3,svpt0, &
+                         xlf,xls,xlv,errmsg,errflg)
+
     case default
 
  end select pbl_select
@@ -879,6 +1197,8 @@
                    config_shinhong_scu_mixing,    &
                    config_shinhong_ke_dissipation
 
+ logical,pointer:: enh_mix
+
  character(len=StrKIND),pointer:: pbl_scheme
 
  integer,pointer:: bl_mynn_cloudpdf,    &
@@ -893,15 +1213,21 @@
                    bl_mynn_edmf_tke,    &
                    bl_mynn_edmf_output, &
                    bl_mynn_mixscalars,  &
+                   bl_mynn_mixaerosols, &
+                   bl_mynn_mixnumcon,   &
                    bl_mynn_cloudmix,    &
                    bl_mynn_mixqt,       &
-                   bl_mynn_tkebudget
+                   bl_mynn_ess,         &
+                   bl_mynn_tkebudget,   &
+                   icloud_bl,           &
+                   spp_pbl
 
  real(kind=RKIND),pointer:: bl_mynn_closure
 
 !local variables:
  integer:: initflag
  integer:: i,k,j
+ logical:: mix_chem
 
 !CCPP-compliant flags:
  character(len=StrKIND):: errmsg
@@ -914,6 +1240,8 @@
 !initialization of CCPP-compliant flags:
  errmsg = ' '
  errflg = 0
+
+ mix_chem  = .false.
 
  call mpas_pool_get_config(configs,'config_do_DAcycling',config_do_DAcycling)
  call mpas_pool_get_config(configs,'config_do_restart'  ,config_do_restart  )
@@ -1011,6 +1339,8 @@
        call mpas_pool_get_config(configs,'config_mynn_mixqt'      ,bl_mynn_mixqt      )
        call mpas_pool_get_config(configs,'config_mynn_tkeadvect'  ,bl_mynn_tkeadvect  )
        call mpas_pool_get_config(configs,'config_mynn_tkebudget'  ,bl_mynn_tkebudget  )
+       call mpas_pool_get_config(configs,'config_icloud_bl'       ,icloud_bl          )
+       call mpas_pool_get_config(configs,'config_spp_pbl'         ,spp_pbl            )
 
 !      call mpas_log_write(' ')
 !      call mpas_log_write('--- enter subroutine mynn_bl_driver:')
@@ -1102,6 +1432,105 @@
        call mpas_timer_stop('bl_mynn')
 !      call mpas_log_write('--- exit subroutine mynn_bl_driver:')
 !      call mpas_log_write(' ')
+
+    case("bl_mynnedmf")
+       call mpas_pool_get_config(configs,'config_mynn_cloudpdf'   ,bl_mynn_cloudpdf   )
+       call mpas_pool_get_config(configs,'config_mynn_mixlength'  ,bl_mynn_mixlength  )
+       call mpas_pool_get_config(configs,'config_mynn_stfunc'     ,bl_mynn_stfunc     )
+       call mpas_pool_get_config(configs,'config_mynn_topdown'    ,bl_mynn_topdown    )
+       call mpas_pool_get_config(configs,'config_mynn_scaleaware' ,bl_mynn_scaleaware )
+       call mpas_pool_get_config(configs,'config_mynn_dheat_opt'  ,bl_mynn_dheat_opt  )
+       call mpas_pool_get_config(configs,'config_mynn_edmf'       ,bl_mynn_edmf       )
+       call mpas_pool_get_config(configs,'config_mynn_edmf_dd'    ,bl_mynn_edmf_dd    )
+       call mpas_pool_get_config(configs,'config_mynn_edmf_mom'   ,bl_mynn_edmf_mom   )
+       call mpas_pool_get_config(configs,'config_mynn_edmf_tke'   ,bl_mynn_edmf_tke   )
+       call mpas_pool_get_config(configs,'config_mynn_edmf_output',bl_mynn_edmf_output)
+       call mpas_pool_get_config(configs,'config_mynn_closure'    ,bl_mynn_closure    )
+       call mpas_pool_get_config(configs,'config_mynn_mixscalars' ,bl_mynn_mixscalars )
+       call mpas_pool_get_config(configs,'config_mynn_mixaerosols',bl_mynn_mixaerosols)
+       call mpas_pool_get_config(configs,'config_mynn_mixnumcon'  ,bl_mynn_mixnumcon  )
+       call mpas_pool_get_config(configs,'config_mynn_mixclouds'  ,bl_mynn_cloudmix   )
+       call mpas_pool_get_config(configs,'config_mynn_mixqt'      ,bl_mynn_mixqt      )
+       call mpas_pool_get_config(configs,'config_mynn_ess'        ,bl_mynn_ess        )
+       call mpas_pool_get_config(configs,'config_mynn_tkeadvect'  ,bl_mynn_tkeadvect  )
+       call mpas_pool_get_config(configs,'config_mynn_tkebudget'  ,bl_mynn_tkebudget  )
+       call mpas_pool_get_config(configs,'config_icloud_bl'       ,icloud_bl          )
+       call mpas_pool_get_config(configs,'config_spp_pbl'         ,spp_pbl            )
+       call mpas_pool_get_config(configs,'config_mynn_enh_mix'    ,enh_mix            )
+
+       if (do_chemistry) mix_chem = .true.
+
+       call mpas_timer_start('bl_mynnedmf')
+       call mynnedmf_driver( &
+                  f_qc       = f_qc         , f_qi       = f_qi         , f_qs        = f_qs            , &
+                  f_qoz      = f_qoz        , f_nc       = f_nc         , f_ni        = f_ni            , &
+                  f_nifa     = f_nifa       , f_nwfa     = f_nwfa       , f_nbca      = f_nbca          , &
+                  icloud_bl  = icloud_bl    , delt       = dt_pbl       , dx          = dx_p            , &
+                  xland      = xland_p      , ps         = psfc_p       , ts          = tsk_p           , &
+                  qsfc       = qsfc_p       , ust        = ust_p        , ch          = ch_p            , &
+                  hfx        = hfx_p        , qfx        = qfx_p        ,                                 &
+                  wspd       = wspd_p       , znt        = znt_p        , uoce        = uoce_p          , &
+                  voce       = voce_p       , dz         = dz_p         , u           = u_p             , &
+                  v          = v_p          , w          = w_p          , th          = th_p            , &
+                  tt         = t_p          , p          = pres_p       , exner       = pi_p            , &
+                  rho        = rho_p        , qv         = qv_p         , qc          = qc_p            , &
+                  qi         = qi_p         , qs         = qs_p         , ni          = ni_p            , &
+                  nc         = nc_p         , nifa       = nifa_p       , nwfa        = nwfa_p          , &
+                  rthraten   = rthraten_p   , pblh       = hpbl_p       , kpbl        = kpbl_p          , &
+                  cldfra_bl  = cldfrabl_p   , qc_bl      = qcbl_p       , qi_bl       = qibl_p          , &
+                  maxwidth   = maxwidthbl_p , maxmf      = maxmfbl_p    , ztop_plume  = zbl_plume_p     , &
+                  excess_h   = excessh_p    , excess_q   = excessq_p    ,                                 &
+                  qke        = qke_p        , qke_adv    = qkeadv_p     ,                                 &
+                  tsq        = tsq_p        , qsq        = qsq_p        , cov         = cov_p           , &
+                  el_pbl     = elpbl_p      , rublten    = rublten_p    , rvblten     = rvblten_p       , &
+                  rthblten   = rthblten_p   , rqvblten   = rqvblten_p   , rqcblten    = rqcblten_p      , &
+                  rqiblten   = rqiblten_p   , rqsblten   = rqsblten_p   , rniblten    = rniblten_p      , &
+                  rncblten   = rncblten_p   , rnwfablten = rnwfablten_p , rnifablten  = rnifablten_p    , &
+                  edmf_a     = edmfa_p      , edmf_w     = edmfw_p      , edmf_qt     = edmfqt_p        , &
+                  edmf_thl   = edmfthl_p    , edmf_ent   = edmfent_p    , edmf_qc     = edmfqc_p        , &
+                  sub_thl    = subthl_p     , sub_sqv    = subqv_p      , det_thl     = detthl_p        , &
+                  det_sqv    = detqv_p      , exch_h     = kzh_p        , exch_m      = kzm_p           , &
+                  dqke       = dqke_p       , qwt        = qwt_p        , qshear      = qshear_p        , &
+                  qbuoy      = qbuoy_p      , qdiss      = qdiss_p      , sh3d        = sh3d_p          , &
+                  sm3d       = sm3d_p       , spp_pbl    = spp_pbl      , pattern_spp = pattern_spp_pbl , &
+                  do_restart         = config_do_restart   ,                                              &
+                  do_DAcycling       = config_do_DAcycling ,                                              &
+                  initflag           = initflag            ,                                              &
+                  bl_mynn_tkeadvect  = bl_mynn_tkeadvect   ,                                              &
+                  bl_mynn_tkebudget  = bl_mynn_tkebudget   ,                                              &
+                  bl_mynn_cloudpdf   = bl_mynn_cloudpdf    ,                                              &
+                  bl_mynn_mixlength  = bl_mynn_mixlength   ,                                              &
+                  bl_mynn_closure    = bl_mynn_closure     ,                                              &
+                  bl_mynn_stfunc     = bl_mynn_stfunc      ,                                              &
+                  bl_mynn_topdown    = bl_mynn_topdown     ,                                              &
+                  bl_mynn_scaleaware = bl_mynn_scaleaware  ,                                              &
+                  bl_mynn_dheat_opt  = bl_mynn_dheat_opt   ,                                              &
+                  bl_mynn_edmf       = bl_mynn_edmf        ,                                              &
+                  bl_mynn_edmf_dd    = bl_mynn_edmf_dd     ,                                              &
+                  bl_mynn_edmf_mom   = bl_mynn_edmf_mom    ,                                              &
+                  bl_mynn_edmf_tke   = bl_mynn_edmf_tke    ,                                              &
+                  bl_mynn_output     = bl_mynn_edmf_output ,                                              &
+                  bl_mynn_mixscalars = bl_mynn_mixscalars  ,                                              &
+                  bl_mynn_mixaerosols= bl_mynn_mixaerosols ,                                              &
+                  bl_mynn_mixnumcon  = bl_mynn_mixnumcon   ,                                              &
+                  bl_mynn_cloudmix   = bl_mynn_cloudmix    ,                                              &
+                  bl_mynn_mixqt      = bl_mynn_mixqt       ,                                              &
+                  bl_mynn_ess        = bl_mynn_ess         ,                                              &
+                  mix_chem           = mix_chem            ,                                              &
+                  nchem              = num_chem            ,                                              &
+                  ndvel              = num_chem            ,                                              &
+                  chem3d             = chem_p              ,                                              &
+                  vd3d               = ddvel_p             ,                                              &
+                  settle3d           = tend_chem_settle_p  ,                                              &
+                  enh_mix            = enh_mix             ,                                              &
+                  frp_mean           = frp_out_p           ,                                              &
+                  emis_ant_no        = aero_emis_for_enhmix_p ,                                           &
+                  ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,                 &
+                  ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,                 &
+                  its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte ,                 &
+                  errmsg = errmsg , errflg = errflg                                                       &
+                          )
+       call mpas_timer_stop('bl_mynnedmf')
 
     case default
 

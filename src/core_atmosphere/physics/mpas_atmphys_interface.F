@@ -143,6 +143,12 @@
        if(.not.allocated(nifa_p)) allocate(nifa_p(ims:ime,kms:kme,jms:jme))
        if(.not.allocated(nwfa_p)) allocate(nwfa_p(ims:ime,kms:kme,jms:jme))
 
+    case("bl_mynnedmf")
+       if(.not.allocated(nc_p)) allocate(nc_p(ims:ime,kms:kme,jms:jme))
+       if(.not.allocated(ni_p)) allocate(ni_p(ims:ime,kms:kme,jms:jme))
+       if(.not.allocated(nifa_p)) allocate(nifa_p(ims:ime,kms:kme,jms:jme))
+       if(.not.allocated(nwfa_p)) allocate(nwfa_p(ims:ime,kms:kme,jms:jme))
+
     case default
  end select pbl_select
 
@@ -213,6 +219,12 @@
 
  pbl_select: select case(trim(pbl_scheme))
     case("bl_mynn")
+       if(allocated(nc_p)) deallocate(nc_p)
+       if(allocated(ni_p)) deallocate(ni_p)
+       if(allocated(nifa_p)) deallocate(nifa_p)
+       if(allocated(nwfa_p)) deallocate(nwfa_p)
+
+    case("bl_mynnedmf")
        if(allocated(nc_p)) deallocate(nc_p)
        if(allocated(ni_p)) deallocate(ni_p)
        if(allocated(nifa_p)) deallocate(nifa_p)
@@ -413,6 +425,58 @@
           enddo
        endif
        !initializes nifa_p and nwfa_p when running the options "mp_thompson_aerosols":
+       if(f_nifa .and. f_nwfa) then
+          nullify(nifa)
+          nullify(nwfa)
+          call mpas_pool_get_dimension(state,'index_nifa',index_nifa)
+          call mpas_pool_get_dimension(state,'index_nwfa',index_nwfa)
+          nifa => scalars(index_nifa,:,:)
+          nwfa => scalars(index_nwfa,:,:)
+          do j = jts,jte
+             do k = kts,kte
+                do i = its,ite
+                   nifa_p(i,k,j) = max(0.,nifa(k,i))
+                   nwfa_p(i,k,j) = max(0.,nwfa(k,i))
+                enddo
+             enddo
+          enddo
+       endif
+
+    case("bl_mynnedmf")
+       do j = jts,jte
+          do k = kts,kte
+             do i = its,ite
+                nc_p(i,k,j)   = 0._RKIND
+                ni_p(i,k,j)   = 0._RKIND
+                nifa_p(i,k,j) = 0._RKIND
+                nwfa_p(i,k,j) = 0._RKIND
+             enddo
+          enddo
+       enddo
+       if(f_ni) then
+          nullify(ni)
+          call mpas_pool_get_dimension(state,'index_ni',index_ni)
+          ni => scalars(index_ni,:,:)
+          do j = jts,jte
+             do k = kts,kte
+                do i = its,ite
+                   ni_p(i,k,j) = max(0.,ni(k,i))
+                enddo
+             enddo
+          enddo
+       endif
+       if(f_nc) then
+          nullify(nc)
+          call mpas_pool_get_dimension(state,'index_nc',index_nc)
+          nc   => scalars(index_nc,:,:)
+          do j = jts,jte
+             do k = kts,kte
+                do i = its,ite
+                   nc_p(i,k,j) = max(0.,nc(k,i))
+                enddo
+             enddo
+          enddo
+       endif
        if(f_nifa .and. f_nwfa) then
           nullify(nifa)
           nullify(nwfa)

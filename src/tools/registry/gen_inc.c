@@ -1405,8 +1405,8 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 							}
 						}
 
-						fortprintf(fd, "! Define constituent var %s\n", varname);
-						fortprintf(fd, "! My packages are %s\n", varpackages);
+						fprintf(fd, "! Define constituent var %s\n", varname);
+						fprintf(fd, "! My packages are %s\n", varpackages);
 
 						// Parse packages if they are defined
 						sub_spacing[0] = '\0';
