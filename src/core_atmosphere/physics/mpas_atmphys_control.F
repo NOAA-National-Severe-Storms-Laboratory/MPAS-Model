@@ -207,8 +207,9 @@
  endif
 
 !pbl scheme:
- if(.not. (config_pbl_scheme .eq. 'off'     .or. &
-           config_pbl_scheme .eq. 'bl_mynn' .or. &
+ if(.not. (config_pbl_scheme .eq. 'off'         .or. &
+           config_pbl_scheme .eq. 'bl_mynn'     .or. &
+           config_pbl_scheme .eq. 'bl_mynnedmf' .or. &
            config_pbl_scheme .eq. 'bl_shinhong' .or. &
            config_pbl_scheme .eq. 'bl_ysu')) then
 
@@ -252,13 +253,24 @@
  endif
 
 !cloud fraction for radiation schemes:
- if(.not. (config_radt_cld_scheme .eq. 'off'           .or. &
-           config_radt_cld_scheme .eq. 'cld_incidence' .or. &
-           config_radt_cld_scheme .eq. 'cld_fraction'  .or. &
-           config_radt_cld_scheme .eq. 'cld_fraction_thompson')) then
+ if(.not. (config_radt_cld_scheme .eq. 'off'                   .or. &
+           config_radt_cld_scheme .eq. 'cld_incidence'         .or. &
+           config_radt_cld_scheme .eq. 'cld_fraction'          .or. &
+           config_radt_cld_scheme .eq. 'cld_fraction_thompson' .or. &
+           config_radt_cld_scheme .eq. 'cld_fraction_mynn')) then
 
     write(mpas_err_message,'(A,A20)') 'illegal value for calculation of cloud fraction: ', &
           trim(config_radt_cld_scheme)
+    call physics_error_fatal(mpas_err_message)
+
+ endif
+
+ if(.not. (config_pbl_scheme .eq. 'bl_mynn'     .or.   &
+           config_pbl_scheme .eq. 'bl_mynnedmf') .and. &
+           (config_radt_cld_scheme .eq. 'cld_fraction_mynn')) then
+
+    write(mpas_err_message,'(A,A20)') 'illegal cloud fraction option for pbl_scheme: ', &
+          trim(config_pbl_scheme)
     call physics_error_fatal(mpas_err_message)
 
  endif
@@ -279,15 +291,18 @@
 !surface-layer scheme:
  if(.not. (config_sfclayer_scheme .eq. 'off'              .or. &
            config_sfclayer_scheme .eq. 'sf_mynn'          .or. &
+           config_sfclayer_scheme .eq. 'sf_mynnsfclay'    .or. &
            config_sfclayer_scheme .eq. 'sf_monin_obukhov' .or. &
            config_sfclayer_scheme .eq. 'sf_monin_obukhov_rev')) then
- 
+
     write(mpas_err_message,'(A,A20)') 'illegal value for surface layer scheme: ', &
           trim(config_sfclayer_scheme)
     call physics_error_fatal(mpas_err_message)
  else
     if(config_pbl_scheme == 'bl_mynn') then
        config_sfclayer_scheme = 'sf_mynn'
+    elseif(config_pbl_scheme == 'bl_mynnedmf') then
+       config_sfclayer_scheme = 'sf_mynnsfclay'
     elseif(config_pbl_scheme == 'bl_shinhong' .or. config_pbl_scheme == 'bl_ysu') then
        if(config_sfclayer_scheme /= 'sf_monin_obukhov' .and. &
           config_sfclayer_scheme /= 'sf_monin_obukhov_rev') then

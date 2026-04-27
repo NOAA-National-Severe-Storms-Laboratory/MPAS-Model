@@ -158,6 +158,9 @@
 
  integer,public:: num_months          !number of months                                         [-]
 
+ integer,public:: num_chem = 0        !number of chemistry tracers (placeholder for chem coupling)
+ logical:: do_chemistry = .false.     !controls call to smoke, dust and other chemical processes
+
  real(kind=RKIND),public:: dt_dyn     !time-step for dynamics
  real(kind=RKIND),public:: dt_microp  !time-step for cloud microphysics parameterization.
  real(kind=RKIND),public:: dt_radtlw  !time-step for longwave radiation parameterization      [mns]
@@ -314,6 +317,18 @@
     nifa_p,           &!"ice-friendly" number concentration                                                 [#/kg]
     nwfa_p             !"water-friendly" number concentration                                               [#/kg]
 
+!Arrays to hold chemistry tracers and dry deposition data passed to MYNN-EDMF.
+ real(kind=RKIND),dimension(:,:,:,:),allocatable:: &
+    chem_p
+ real(kind=RKIND),dimension(:,:,:,:),allocatable:: &
+    tend_chem_settle_p
+ real(kind=RKIND),dimension(:,:,:),allocatable:: &
+    ddvel_p
+ real(kind=RKIND),dimension(:,:),allocatable:: &
+    aero_emis_for_enhmix_p
+ real(kind=RKIND),dimension(:,:),allocatable:: &
+    frp_out_p
+
 !=================================================================================================================
 !... variables and arrays related to parameterization of convection:
 !=================================================================================================================
@@ -432,8 +447,10 @@
     kzq_p              !
 
 !... MYNN PBL scheme (module_bl_mynn.F):
- integer,parameter:: spp_pbl   = 0          !generate array with random perturbations (0=off,1=on).
- integer,parameter:: icloud_bl = 0          !no coupling of subgrid-scale clouds with radiation.
+!   Module-level scalars (default 0). The MYNN-EDMF pbl driver reads namelist
+!   values into a local pointer that shadows these names in its scope.
+ integer:: spp_pbl   = 0   !generate array with random perturbations (0=off,1=on).
+ integer:: icloud_bl = 0   !no coupling of subgrid-scale clouds with radiation.
 
  integer,dimension(:,:),allocatable:: &
     kbl_plume_p        !level of highest penetrating plume.
@@ -441,7 +458,9 @@
  real(kind=RKIND),dimension(:,:),allocatable:: &
     maxwidthbl_p,     &!max plume width                                                                        [m]
     maxmfbl_p,        &!maximum mass flux for PBL shallow convection.
-    zbl_plume_p        !height of highest penetrating plume                                                    [m]
+    zbl_plume_p,      &!height of highest penetrating plume                                                    [m]
+    excessh_p,        &!maximum heat excess applied to plumes                                                  [K]
+    excessq_p          !maximum moisture excess applied to plumes                                          [kg/kg]
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     dqke_p,           &!
@@ -585,6 +604,7 @@
     chs2_p,           &!
     ck_p,             &!enthalpy exchange coeff at 10 meters                                                   [?]
     cka_p,            &!enthalpy exchange coeff at the lowest model level                                      [?]
+    cqs_p,            &!surface exchange coefficient for moisture                                              [m s^{-1}]
     cqs2_p,           &!
     gz1oz0_p,         &!log of z1 over z0                                                                      [-]
     flhc_p,           &!exchange coefficient for heat                                                          [-]
@@ -979,7 +999,7 @@
 !   is set to true. the arrays below have the same definition as the corresponding "_p" arrays:
 !=================================================================================================================
 
- real(kind=RKIND),dimension(:,:),allocatable:: br_sea,ch_sea,chs_sea,chs2_sea,cpm_sea,cqs2_sea,      &
+ real(kind=RKIND),dimension(:,:),allocatable:: br_sea,ch_sea,chs_sea,chs2_sea,cpm_sea,cqs_sea,cqs2_sea,      &
                                 flhc_sea,flqc_sea,gz1oz0_sea,hfx_sea,lh_sea,mavail_sea,mol_sea,      &
                                 psih_sea,psim_sea,fh_sea,fm_sea,qfx_sea,qgh_sea,qsfc_sea,regime_sea, &
                                 rmol_sea,ust_sea,wspd_sea,znt_sea,zol_sea,tsk_sea,xland_sea
